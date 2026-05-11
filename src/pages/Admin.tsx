@@ -3,6 +3,7 @@ import { QRCodeSVG } from 'qrcode.react'
 import JSZip from 'jszip'
 import { saveAs } from 'file-saver'
 import PasswordGate from '../components/PasswordGate'
+import { useAuth } from '../context/AuthContext'
 import {
   fetchPhotos,
   getReleaseState,
@@ -13,7 +14,8 @@ import {
 } from '../lib/supabase'
 
 export default function Admin() {
-  const [unlocked, setUnlocked] = useState(false)
+  const { isAdmin, unlockAdmin } = useAuth()
+  const [unlocked, setUnlocked] = useState(isAdmin)
   const pw = import.meta.env.VITE_ADMIN_PASSWORD as string | undefined
 
   if (!pw) {
@@ -25,7 +27,16 @@ export default function Admin() {
   }
 
   if (!unlocked) {
-    return <PasswordGate title="Admin" password={pw} onUnlock={() => setUnlocked(true)} />
+    return (
+      <PasswordGate
+        title="Admin"
+        password={pw}
+        onUnlock={() => {
+          unlockAdmin()
+          setUnlocked(true)
+        }}
+      />
+    )
   }
 
   return <AdminContent />

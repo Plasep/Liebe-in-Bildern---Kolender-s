@@ -58,16 +58,30 @@ function GalleryContent({ bucketKey }: { bucketKey: GalleryKey }) {
   const [released, setReleased] = useState(false)
   const [lightboxIndex, setLightboxIndex] = useState(-1)
 
+  const isDay = bucketKey === 'day'
+  const canSeeAll = released || isAdmin
+  const dayLocked = isDay && !canSeeAll
+
   useEffect(() => {
     let cancelled = false
     ;(async () => {
       setLoading(true)
       const isReleased = await getReleaseState(bucketKey)
-      const canSeeAll = isReleased || isAdmin
-      const folder = canSeeAll ? undefined : nameToFolder(displayName)
-      const data = await fetchPhotos(bucketKey, folder)
       if (cancelled) return
       setReleased(isReleased)
+
+      const seeAll = isReleased || isAdmin
+
+      // Day gallery is fully gated for non-admins until release
+      if (bucketKey === 'day' && !seeAll) {
+        setPhotos([])
+        setLoading(false)
+        return
+      }
+
+      const folder = seeAll ? undefined : nameToFolder(displayName)
+      const data = await fetchPhotos(bucketKey, folder)
+      if (cancelled) return
       setPhotos(data)
       setLoading(false)
     })()
@@ -76,9 +90,6 @@ function GalleryContent({ bucketKey }: { bucketKey: GalleryKey }) {
     }
   }, [bucketKey, displayName, isAdmin])
 
-  const slides = photos.map(p => ({ src: p.url }))
-  const showingOwnOnly = !released && !isAdmin
-
   if (loading) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
@@ -86,6 +97,32 @@ function GalleryContent({ bucketKey }: { bucketKey: GalleryKey }) {
       </div>
     )
   }
+
+  if (dayLocked) {
+    return (
+      <div className="min-h-[70vh] flex flex-col items-center justify-center px-6 text-center">
+        <p className="text-xs tracking-[0.4em] uppercase text-gold mb-4 font-light">
+          {GALLERY_LABEL.day}
+        </p>
+        <div className="font-serif text-5xl text-gold/30 mb-6">♡</div>
+        <h1 className="font-serif text-4xl mb-3">Galerie nicht freigegeben</h1>
+        <p className="text-charcoal/55 font-light max-w-sm mb-10 leading-relaxed">
+          Diese Galerie wird vom Brautpaar nach der Hochzeit freigegeben.
+          Du kannst aber jetzt schon Fotos hochladen.
+        </p>
+        <Link
+          to="/upload-day"
+          className="px-8 py-3 bg-charcoal text-cream text-xs tracking-widest uppercase
+                     hover:bg-charcoal/80 transition-colors"
+        >
+          Fotos hochladen
+        </Link>
+      </div>
+    )
+  }
+
+  const slides = photos.map(p => ({ src: p.url }))
+  const showingOwnOnly = !released && !isAdmin // pre bucket only
 
   return (
     <div className="px-4 py-14">
@@ -97,13 +134,14 @@ function GalleryContent({ bucketKey }: { bucketKey: GalleryKey }) {
         {photos.length} {photos.length === 1 ? 'Foto' : 'Fotos'}
       </p>
 
-      {showingOwnOnly && (
+      {showingOwnOnly ? (
         <p className="text-center text-charcoal/50 font-light text-xs max-w-sm mx-auto mb-10 leading-relaxed">
           Die Galerie ist noch nicht freigegeben &ndash; du siehst nur deine eigenen Fotos.
           Sobald das Brautpaar die Galerie öffnet, erscheinen hier alle Bilder.
         </p>
+      ) : (
+        <div className="mb-10" />
       )}
-      {!showingOwnOnly && <div className="mb-10" />}
 
       {photos.length === 0 ? (
         <div className="text-center py-24">
