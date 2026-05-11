@@ -1,10 +1,27 @@
 import { useState, useRef, DragEvent, ChangeEvent } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import imageCompression from 'browser-image-compression'
 import { supabase, BUCKET } from '../lib/supabase'
 
 type State = 'idle' | 'uploading' | 'success' | 'error'
 
 export default function Upload() {
+  const [searchParams] = useSearchParams()
+  const validToken = import.meta.env.VITE_UPLOAD_TOKEN as string | undefined
+  const providedToken = searchParams.get('token')
+
+  if (validToken && providedToken !== validToken) {
+    return (
+      <div className="min-h-[75vh] flex flex-col items-center justify-center px-6 text-center">
+        <div className="font-serif text-5xl text-gold/30 mb-6">♡</div>
+        <h1 className="font-serif text-4xl mb-3">QR-Code scannen</h1>
+        <p className="text-charcoal/55 font-light max-w-xs leading-relaxed">
+          Bitte scanne den QR-Code auf der Hochzeit, um Fotos hochzuladen.
+        </p>
+      </div>
+    )
+  }
+
   const [name, setName] = useState('')
   const [files, setFiles] = useState<File[]>([])
   const [previews, setPreviews] = useState<string[]>([])

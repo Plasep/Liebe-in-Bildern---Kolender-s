@@ -30,7 +30,11 @@ function AdminContent() {
   const [downloading, setDownloading] = useState(false)
   const [downloadProgress, setDownloadProgress] = useState(0)
 
-  const uploadUrl = `${window.location.href.split('#')[0]}#/upload`
+  const uploadToken = import.meta.env.VITE_UPLOAD_TOKEN as string | undefined
+  const base = window.location.href.split('#')[0]
+  const uploadUrl = uploadToken
+    ? `${base}#/upload?token=${uploadToken}`
+    : `${base}#/upload`
 
   useEffect(() => {
     fetchAllPhotos().then(data => {
