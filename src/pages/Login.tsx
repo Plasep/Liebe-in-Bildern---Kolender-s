@@ -1,10 +1,10 @@
 import { useState, FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { supabase } from '../lib/supabase'
+import { supabase, nameToEmail } from '../lib/supabase'
 
 export default function Login() {
   const navigate = useNavigate()
-  const [email, setEmail] = useState('')
+  const [name, setName] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -15,12 +15,12 @@ export default function Login() {
     setLoading(true)
 
     const { error: signInError } = await supabase.auth.signInWithPassword({
-      email,
+      email: nameToEmail(name.trim()),
       password,
     })
 
     if (signInError) {
-      setError('E-Mail oder Passwort falsch.')
+      setError('Name oder Passwort falsch.')
       setLoading(false)
       return
     }
@@ -36,19 +36,19 @@ export default function Login() {
         </p>
         <h1 className="font-serif text-4xl text-center mb-2">Anmelden</h1>
         <p className="text-center text-charcoal/55 font-light text-sm mb-10">
-          Melde dich an, um Fotos hochzuladen
+          Melde dich an, um Fotos hochzuladen und die Galerie zu sehen
         </p>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div>
             <label className="block text-xs tracking-widest uppercase mb-2 text-charcoal/55">
-              E-Mail
+              Dein Name
             </label>
             <input
-              type="email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              placeholder="maria@beispiel.de"
+              type="text"
+              value={name}
+              onChange={e => setName(e.target.value)}
+              placeholder="z. B. Maria Mustermann"
               required
               autoFocus
               className="w-full px-4 py-3 bg-white border border-cream-dark outline-none

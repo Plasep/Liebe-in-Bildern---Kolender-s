@@ -7,6 +7,18 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 export const BUCKET = 'wedding-photos'
 
+// Converts a guest name to a stable internal email (never shown to user)
+export function nameToEmail(name: string): string {
+  const normalized = name
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '') // ä→a, ö→o, ü→u etc.
+    .replace(/[^a-z0-9\s]/g, '')
+    .replace(/\s+/g, '.')
+  return `${normalized}@kolenders-hochzeit.de`
+}
+
 export type Photo = {
   guestName: string
   path: string

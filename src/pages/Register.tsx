@@ -1,11 +1,10 @@
 import { useState, FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { supabase } from '../lib/supabase'
+import { supabase, nameToEmail } from '../lib/supabase'
 
 export default function Register() {
   const navigate = useNavigate()
   const [name, setName] = useState('')
-  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -15,23 +14,25 @@ export default function Register() {
     setError('')
     setLoading(true)
 
-    // 1. Prüfen ob E-Mail auf der Gästeliste steht
+    const trimmedName = name.trim()
+
+    // 1. Prüfen ob Name auf der Gästeliste steht
     const { data: allowed, error: rpcError } = await supabase.rpc('check_guest_allowed', {
-      guest_email: email.toLowerCase().trim(),
+      guest_name: trimmedName,
     })
 
     if (rpcError || !allowed) {
-      setError('Diese E-Mail-Adresse ist nicht auf der Gästeliste.')
+      setError('Dieser Name ist nicht auf der Gästeliste.')
       setLoading(false)
       return
     }
 
-    // 2. Konto anlegen
+    // 2. Konto anlegen (interne Email, für Gast unsichtbar)
     const { error: signUpError } = await supabase.auth.signUp({
-      email,
+      email: nameToEmail(trimmedName),
       password,
       options: {
-        data: { display_name: name.trim() },
+        data: { display_name: trimmedName },
       },
     })
 
@@ -52,7 +53,7 @@ export default function Register() {
         </p>
         <h1 className="font-serif text-4xl text-center mb-2">Registrieren</h1>
         <p className="text-center text-charcoal/55 font-light text-sm mb-10">
-          Nutze die E-Mail-Adresse, mit der du eingeladen wurdest
+          Gib deinen Namen ein, genau wie du eingeladen wurdest
         </p>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -64,23 +65,9 @@ export default function Register() {
               type="text"
               value={name}
               onChange={e => setName(e.target.value)}
-              placeholder="Maria Mustermann"
+              placeholder="z. B. Maria Mustermann"
               required
               autoFocus
-              className="w-full px-4 py-3 bg-white border border-cream-dark outline-none
-                         focus:border-gold transition-colors"
-            />
-          </div>
-          <div>
-            <label className="block text-xs tracking-widest uppercase mb-2 text-charcoal/55">
-              E-Mail
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              placeholder="maria@beispiel.de"
-              required
               className="w-full px-4 py-3 bg-white border border-cream-dark outline-none
                          focus:border-gold transition-colors"
             />
