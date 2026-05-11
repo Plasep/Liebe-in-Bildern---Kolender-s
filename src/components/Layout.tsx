@@ -5,6 +5,9 @@ export default function Layout() {
   const { pathname } = useLocation()
   const { user, loading, displayName, signOut } = useAuth()
 
+  const isDayContext = pathname === '/gallery-day' || pathname === '/upload-day'
+  const uploadTarget = isDayContext ? '/upload-day' : '/upload'
+
   const navLink = (to: string, label: string) => (
     <Link
       to={to}
@@ -29,11 +32,12 @@ export default function Layout() {
 
         <nav className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 sm:gap-6">
           {navLink('/gallery', 'Galerie')}
+          {navLink('/gallery-day', 'Hochzeitstag')}
 
           {!loading && (
             user ? (
               <>
-                {navLink('/upload', 'Hochladen')}
+                {navLink(uploadTarget, 'Hochladen')}
                 <span className="text-xs text-charcoal/40 font-light hidden md:inline">
                   {displayName}
                 </span>
