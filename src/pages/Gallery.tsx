@@ -41,7 +41,6 @@ export default function Gallery() {
 function GalleryContent() {
   const [photos, setPhotos] = useState<Photo[]>([])
   const [loading, setLoading] = useState(true)
-  const [activeGuest, setActiveGuest] = useState<string | null>(null)
   const [lightboxIndex, setLightboxIndex] = useState(-1)
 
   useEffect(() => {
@@ -51,9 +50,7 @@ function GalleryContent() {
     })
   }, [])
 
-  const guests = [...new Set(photos.map(p => p.guestName))].sort()
-  const filtered = activeGuest ? photos.filter(p => p.guestName === activeGuest) : photos
-  const slides = filtered.map(p => ({ src: p.url }))
+  const slides = photos.map(p => ({ src: p.url }))
 
   if (loading) {
     return (
@@ -70,39 +67,17 @@ function GalleryContent() {
       </p>
       <h1 className="font-serif text-5xl text-center mb-2">Galerie</h1>
       <p className="text-center text-charcoal/50 font-light text-sm mb-10">
-        {photos.length} {photos.length === 1 ? 'Foto' : 'Fotos'} von{' '}
-        {guests.length} {guests.length === 1 ? 'Gast' : 'Gästen'}
+        {photos.length} {photos.length === 1 ? 'Foto' : 'Fotos'}
       </p>
 
-      {/* Guest filter */}
-      {guests.length > 1 && (
-        <div className="flex flex-wrap gap-2 justify-center mb-10">
-          {(['Alle', ...guests] as const).map(g => {
-            const key = g === 'Alle' ? null : g
-            const active = activeGuest === key
-            return (
-              <button
-                key={g}
-                onClick={() => setActiveGuest(key)}
-                className={`px-4 py-1.5 text-xs tracking-widest uppercase border transition-colors
-                            ${active
-                              ? 'border-charcoal bg-charcoal text-cream'
-                              : 'border-cream-dark hover:border-charcoal'}`}
-              >
-                {g}
-              </button>
-            )
-          })}
-        </div>
-      )}
 
-      {filtered.length === 0 ? (
+      {photos.length === 0 ? (
         <div className="text-center py-24">
           <p className="text-charcoal/35 font-light">Noch keine Fotos hochgeladen.</p>
         </div>
       ) : (
         <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-3 max-w-7xl mx-auto">
-          {filtered.map((photo, i) => (
+          {photos.map((photo, i) => (
             <div
               key={photo.path}
               className="break-inside-avoid mb-3 group cursor-pointer relative overflow-hidden"
@@ -110,17 +85,10 @@ function GalleryContent() {
             >
               <img
                 src={photo.url}
-                alt={`Foto von ${photo.guestName}`}
+                alt="Hochzeitsfoto"
                 className="w-full block transition-transform duration-500 group-hover:scale-105"
                 loading="lazy"
               />
-              <div
-                className="absolute inset-x-0 bottom-0 px-3 py-2
-                           bg-gradient-to-t from-black/50 to-transparent
-                           opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-              >
-                <p className="text-white text-xs font-light">{photo.guestName}</p>
-              </div>
             </div>
           ))}
         </div>
