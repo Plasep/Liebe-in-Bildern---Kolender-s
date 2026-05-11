@@ -1,7 +1,13 @@
 import { Link, Outlet, useLocation } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 
 export default function Layout() {
   const { pathname } = useLocation()
+  const { user, loading, signOut } = useAuth()
+
+  const displayName = (user?.user_metadata?.display_name as string | undefined)
+    ?? user?.email
+    ?? ''
 
   const navLink = (to: string, label: string) => (
     <Link
@@ -20,9 +26,28 @@ export default function Layout() {
         <Link to="/" className="font-serif text-xl tracking-wide">
           Kolender's
         </Link>
-        <nav className="flex gap-8">
-          {navLink('/upload', 'Hochladen')}
+
+        <nav className="flex items-center gap-6">
           {navLink('/gallery', 'Galerie')}
+
+          {!loading && (
+            user ? (
+              <>
+                {navLink('/upload', 'Hochladen')}
+                <span className="text-xs text-charcoal/40 font-light hidden sm:inline">
+                  {displayName}
+                </span>
+                <button
+                  onClick={() => void signOut()}
+                  className="text-xs tracking-widest uppercase text-charcoal/60 hover:text-gold transition-colors"
+                >
+                  Abmelden
+                </button>
+              </>
+            ) : (
+              navLink('/login', 'Anmelden')
+            )
+          )}
         </nav>
       </header>
 

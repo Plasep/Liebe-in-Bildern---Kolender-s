@@ -1,28 +1,57 @@
 import { useState, useRef, DragEvent, ChangeEvent } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import imageCompression from 'browser-image-compression'
 import { supabase, BUCKET } from '../lib/supabase'
+import { useAuth } from '../context/AuthContext'
 
 type State = 'idle' | 'uploading' | 'success' | 'error'
 
 export default function Upload() {
-  const [searchParams] = useSearchParams()
-  const validToken = import.meta.env.VITE_UPLOAD_TOKEN as string | undefined
-  const providedToken = searchParams.get('token')
+  const { user, loading } = useAuth()
 
-  if (validToken && providedToken !== validToken) {
+  if (loading) {
     return (
-      <div className="min-h-[75vh] flex flex-col items-center justify-center px-6 text-center">
-        <div className="font-serif text-5xl text-gold/30 mb-6">♡</div>
-        <h1 className="font-serif text-4xl mb-3">QR-Code scannen</h1>
-        <p className="text-charcoal/55 font-light max-w-xs leading-relaxed">
-          Bitte scanne den QR-Code auf der Hochzeit, um Fotos hochzuladen.
-        </p>
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <p className="font-light text-charcoal/50 text-sm animate-pulse">Lädt …</p>
       </div>
     )
   }
 
-  const [name, setName] = useState('')
+  if (!user) {
+    return (
+      <div className="min-h-[75vh] flex flex-col items-center justify-center px-6 text-center">
+        <div className="font-serif text-5xl text-gold/30 mb-6">♡</div>
+        <h1 className="font-serif text-4xl mb-3">Anmelden erforderlich</h1>
+        <p className="text-charcoal/55 font-light max-w-xs mb-10 leading-relaxed">
+          Bitte melde dich an oder registriere dich, um Fotos hochzuladen.
+        </p>
+        <div className="flex gap-4">
+          <Link
+            to="/login"
+            className="px-8 py-3 bg-charcoal text-cream text-xs tracking-widest uppercase
+                       hover:bg-charcoal/80 transition-colors"
+          >
+            Anmelden
+          </Link>
+          <Link
+            to="/register"
+            className="px-8 py-3 border border-charcoal text-xs tracking-widest uppercase
+                       hover:bg-charcoal/5 transition-colors"
+          >
+            Registrieren
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
+  return <UploadForm user={user} />
+}
+
+function UploadForm({ user }: { user: NonNullable<ReturnType<typeof useAuth>['user']> }) {
+  const guestName =
+    (user.user_metadata?.display_name as string | undefined) || user.email || 'Gast'
+
   const [files, setFiles] = useState<File[]>([])
   const [previews, setPreviews] = useState<string[]>([])
   const [state, setState] = useState<State>('idle')
@@ -56,17 +85,16 @@ export default function Upload() {
     previews.forEach(url => URL.revokeObjectURL(url))
     setFiles([])
     setPreviews([])
-    setName('')
     setState('idle')
     setProgress(0)
   }
 
   const handleUpload = async () => {
-    if (!name.trim() || files.length === 0) return
+    if (files.length === 0) return
     setState('uploading')
     setProgress(0)
 
-    const safeName = name.trim().replace(/[^\w\säöüÄÖÜß-]/g, '').trim() || 'Gast'
+    const safeName = guestName.replace(/[^\w\säöüÄÖÜß-]/g, '').trim() || 'Gast'
 
     try {
       for (let i = 0; i < files.length; i++) {
@@ -118,24 +146,12 @@ export default function Upload() {
         Eure Momente
       </p>
       <h1 className="font-serif text-5xl text-center mb-2">Fotos hochladen</h1>
-      <p className="text-center text-charcoal/55 font-light mb-12 text-sm">
+      <p className="text-center text-charcoal/55 font-light mb-2 text-sm">
         Teile deine schönsten Aufnahmen mit uns
       </p>
-
-      {/* Name */}
-      <div className="mb-7">
-        <label className="block text-xs tracking-widest uppercase mb-2 text-charcoal/55">
-          Dein Name
-        </label>
-        <input
-          type="text"
-          value={name}
-          onChange={e => setName(e.target.value)}
-          placeholder="z. B. Maria Mustermann"
-          className="w-full px-4 py-3 bg-white border border-cream-dark outline-none
-                     focus:border-gold transition-colors"
-        />
-      </div>
+      <p className="text-center text-charcoal/40 font-light mb-12 text-xs">
+        Hochgeladen als: <span className="text-charcoal/60">{guestName}</span>
+      </p>
 
       {/* Drop zone */}
       <div
@@ -185,14 +201,12 @@ export default function Upload() {
         </div>
       )}
 
-      {/* Error */}
       {state === 'error' && (
         <p className="text-red-400 text-sm text-center mb-5">
           Fehler beim Hochladen. Bitte versuche es erneut.
         </p>
       )}
 
-      {/* Progress / Button */}
       {state === 'uploading' ? (
         <div className="text-center">
           <div className="h-0.5 bg-cream-dark mb-3 overflow-hidden">
@@ -205,8 +219,8 @@ export default function Upload() {
         </div>
       ) : (
         <button
-          onClick={handleUpload}
-          disabled={!name.trim() || files.length === 0}
+          onClick={() => void handleUpload()}
+          disabled={files.length === 0}
           className="w-full py-4 bg-charcoal text-cream text-xs tracking-widest uppercase
                      hover:bg-charcoal/80 transition-colors
                      disabled:opacity-40 disabled:cursor-not-allowed"
