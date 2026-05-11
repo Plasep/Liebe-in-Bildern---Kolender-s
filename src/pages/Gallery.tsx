@@ -5,6 +5,7 @@ import 'yet-another-react-lightbox/styles.css'
 import {
   fetchPhotos,
   getReleaseState,
+  deletePhoto,
   nameToFolder,
   GALLERY_LABEL,
   type GalleryKey,
@@ -123,6 +124,18 @@ function GalleryContent({ bucketKey }: { bucketKey: GalleryKey }) {
 
   const slides = photos.map(p => ({ src: p.url }))
   const showingOwnOnly = !released && !isAdmin // pre bucket only
+  const ownFolder = nameToFolder(displayName)
+  const canDelete = (photo: Photo) => isAdmin || photo.guestName === ownFolder
+
+  const handleDelete = async (photo: Photo) => {
+    if (!window.confirm('Foto wirklich löschen?')) return
+    const { error } = await deletePhoto(bucketKey, photo.path)
+    if (error) {
+      window.alert('Konnte nicht gelöscht werden: ' + error)
+      return
+    }
+    setPhotos(prev => prev.filter(p => p.path !== photo.path))
+  }
 
   return (
     <div className="px-4 py-14">
@@ -165,6 +178,23 @@ function GalleryContent({ bucketKey }: { bucketKey: GalleryKey }) {
                 className="w-full block transition-transform duration-500 group-hover:scale-105"
                 loading="lazy"
               />
+              {canDelete(photo) && (
+                <button
+                  onClick={e => {
+                    e.stopPropagation()
+                    void handleDelete(photo)
+                  }}
+                  aria-label="Foto löschen"
+                  title="Foto löschen"
+                  className="absolute top-2 right-2 w-8 h-8 rounded-full
+                             bg-black/55 text-white text-sm leading-none
+                             flex items-center justify-center
+                             opacity-100 sm:opacity-0 sm:group-hover:opacity-100
+                             hover:bg-red-600 transition-all"
+                >
+                  ✕
+                </button>
+              )}
             </div>
           ))}
         </div>

@@ -145,3 +145,15 @@ export async function setReleaseState(
 
   return { error: error?.message ?? null }
 }
+
+/**
+ * Deletes a single photo from a bucket.
+ * The server still needs a storage delete policy — see README.
+ */
+export async function deletePhoto(
+  bucketKey: GalleryKey,
+  path: string,
+): Promise<{ error: string | null }> {
+  const { error } = await supabase.storage.from(BUCKETS[bucketKey]).remove([path])
+  return { error: error?.message ?? null }
+}
