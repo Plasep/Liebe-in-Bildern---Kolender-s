@@ -1,23 +1,38 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import Lightbox from 'yet-another-react-lightbox'
 import 'yet-another-react-lightbox/styles.css'
-import PasswordGate from '../components/PasswordGate'
 import { fetchAllPhotos, type Photo } from '../lib/supabase'
+import { useAuth } from '../context/AuthContext'
 
 export default function Gallery() {
-  const [unlocked, setUnlocked] = useState(false)
-  const pw = import.meta.env.VITE_GALLERY_PASSWORD as string | undefined
+  const { user, loading } = useAuth()
 
-  if (!pw) {
+  if (loading) {
     return (
-      <div className="min-h-[60vh] flex items-center justify-center text-charcoal/40 font-light text-sm">
-        Galerie ist noch nicht konfiguriert.
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <p className="font-light text-charcoal/50 text-sm animate-pulse">Lädt …</p>
       </div>
     )
   }
 
-  if (!unlocked) {
-    return <PasswordGate title="Galerie" password={pw} onUnlock={() => setUnlocked(true)} />
+  if (!user) {
+    return (
+      <div className="min-h-[75vh] flex flex-col items-center justify-center px-6 text-center">
+        <div className="font-serif text-5xl text-gold/30 mb-6">♡</div>
+        <h1 className="font-serif text-4xl mb-3">Anmelden erforderlich</h1>
+        <p className="text-charcoal/55 font-light max-w-xs mb-10 leading-relaxed">
+          Bitte melde dich an, um die Galerie zu sehen.
+        </p>
+        <Link
+          to="/login"
+          className="px-8 py-3 bg-charcoal text-cream text-xs tracking-widest uppercase
+                     hover:bg-charcoal/80 transition-colors"
+        >
+          Anmelden
+        </Link>
+      </div>
+    )
   }
 
   return <GalleryContent />
