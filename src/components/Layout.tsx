@@ -3,11 +3,7 @@ import { useAuth } from '../context/AuthContext'
 
 export default function Layout() {
   const { pathname } = useLocation()
-  const { user, loading, signOut } = useAuth()
-
-  const displayName = (user?.user_metadata?.display_name as string | undefined)
-    ?? user?.email
-    ?? ''
+  const { user, loading, displayName, signOut } = useAuth()
 
   const navLink = (to: string, label: string) => (
     <Link
@@ -22,19 +18,23 @@ export default function Layout() {
 
   return (
     <div className="min-h-screen flex flex-col bg-cream font-sans">
-      <header className="px-6 py-5 flex items-center justify-between border-b border-cream-dark">
+      <header
+        className="px-5 sm:px-6 py-4 sm:py-5 border-b border-cream-dark
+                   flex flex-col items-center gap-3
+                   sm:flex-row sm:justify-between sm:gap-6"
+      >
         <Link to="/" className="font-serif text-xl tracking-wide">
           Kolender's
         </Link>
 
-        <nav className="flex items-center gap-6">
+        <nav className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 sm:gap-6">
           {navLink('/gallery', 'Galerie')}
 
           {!loading && (
             user ? (
               <>
                 {navLink('/upload', 'Hochladen')}
-                <span className="text-xs text-charcoal/40 font-light hidden sm:inline">
+                <span className="text-xs text-charcoal/40 font-light hidden md:inline">
                   {displayName}
                 </span>
                 <button

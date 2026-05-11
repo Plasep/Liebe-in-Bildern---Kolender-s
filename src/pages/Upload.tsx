@@ -1,13 +1,18 @@
 import { useState, useRef, DragEvent, ChangeEvent } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import imageCompression from 'browser-image-compression'
-import { supabase, BUCKET } from '../lib/supabase'
+import { supabase, BUCKETS, GALLERY_LABEL, nameToFolder, type GalleryKey } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 
 type State = 'idle' | 'uploading' | 'success' | 'error'
 
-export default function Upload() {
+interface Props {
+  bucketKey?: GalleryKey
+}
+
+export default function Upload({ bucketKey = 'pre' }: Props) {
   const { user, loading } = useAuth()
+  const location = useLocation()
 
   if (loading) {
     return (
@@ -18,6 +23,7 @@ export default function Upload() {
   }
 
   if (!user) {
+    const nextParam = `?next=${encodeURIComponent(location.pathname)}`
     return (
       <div className="min-h-[75vh] flex flex-col items-center justify-center px-6 text-center">
         <div className="font-serif text-5xl text-gold/30 mb-6">♡</div>
@@ -27,14 +33,14 @@ export default function Upload() {
         </p>
         <div className="flex gap-4">
           <Link
-            to="/login"
+            to={`/login${nextParam}`}
             className="px-8 py-3 bg-charcoal text-cream text-xs tracking-widest uppercase
                        hover:bg-charcoal/80 transition-colors"
           >
             Anmelden
           </Link>
           <Link
-            to="/register"
+            to={`/register${nextParam}`}
             className="px-8 py-3 border border-charcoal text-xs tracking-widest uppercase
                        hover:bg-charcoal/5 transition-colors"
           >
@@ -45,10 +51,16 @@ export default function Upload() {
     )
   }
 
-  return <UploadForm user={user} />
+  return <UploadForm user={user} bucketKey={bucketKey} />
 }
 
-function UploadForm({ user }: { user: NonNullable<ReturnType<typeof useAuth>['user']> }) {
+function UploadForm({
+  user,
+  bucketKey,
+}: {
+  user: NonNullable<ReturnType<typeof useAuth>['user']>
+  bucketKey: GalleryKey
+}) {
   const guestName =
     (user.user_metadata?.display_name as string | undefined) || user.email || 'Gast'
 
@@ -94,7 +106,8 @@ function UploadForm({ user }: { user: NonNullable<ReturnType<typeof useAuth>['us
     setState('uploading')
     setProgress(0)
 
-    const safeName = guestName.replace(/[^\w\säöüÄÖÜß-]/g, '').trim() || 'Gast'
+    const safeName = nameToFolder(guestName)
+    const bucket = BUCKETS[bucketKey]
 
     try {
       for (let i = 0; i < files.length; i++) {
@@ -107,7 +120,7 @@ function UploadForm({ user }: { user: NonNullable<ReturnType<typeof useAuth>['us
 
         const path = `${safeName}/${Date.now() + i}.jpg`
         const { error } = await supabase.storage
-          .from(BUCKET)
+          .from(bucket)
           .upload(path, compressed, { contentType: 'image/jpeg' })
 
         if (error) throw error
@@ -143,7 +156,7 @@ function UploadForm({ user }: { user: NonNullable<ReturnType<typeof useAuth>['us
   return (
     <div className="max-w-lg mx-auto px-6 py-16">
       <p className="text-xs tracking-[0.4em] uppercase text-gold text-center mb-3 font-light">
-        Eure Momente
+        {GALLERY_LABEL[bucketKey]}
       </p>
       <h1 className="font-serif text-5xl text-center mb-2">Fotos hochladen</h1>
       <p className="text-center text-charcoal/55 font-light mb-2 text-sm">

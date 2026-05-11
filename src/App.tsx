@@ -14,8 +14,10 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Layout />}>
           <Route index element={<Home />} />
-          <Route path="upload" element={<Upload />} />
-          <Route path="gallery" element={<Gallery />} />
+          <Route path="upload" element={<Upload bucketKey="pre" />} />
+          <Route path="upload-day" element={<Upload bucketKey="day" />} />
+          <Route path="gallery" element={<Gallery bucketKey="pre" />} />
+          <Route path="gallery-day" element={<Gallery bucketKey="day" />} />
           <Route path="admin" element={<Admin />} />
           <Route path="login" element={<Login />} />
           <Route path="register" element={<Register />} />

@@ -1,9 +1,14 @@
 import { useState, FormEvent } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase, nameToEmail } from '../lib/supabase'
+
+const SAFE_NEXT = /^\/[a-z0-9/_-]*$/i
 
 export default function Register() {
   const navigate = useNavigate()
+  const [params] = useSearchParams()
+  const nextRaw = params.get('next')
+  const next = nextRaw && SAFE_NEXT.test(nextRaw) ? nextRaw : '/upload'
   const [name, setName] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -42,7 +47,7 @@ export default function Register() {
       return
     }
 
-    navigate('/upload')
+    navigate(next)
   }
 
   return (
@@ -103,7 +108,7 @@ export default function Register() {
         <p className="text-center text-sm font-light mt-6 text-charcoal/55">
           Bereits registriert?{' '}
           <Link
-            to="/login"
+            to={`/login${nextRaw ? `?next=${encodeURIComponent(next)}` : ''}`}
             className="underline underline-offset-2 hover:text-gold transition-colors"
           >
             Anmelden

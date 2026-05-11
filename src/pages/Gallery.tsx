@@ -1,12 +1,24 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import Lightbox from 'yet-another-react-lightbox'
 import 'yet-another-react-lightbox/styles.css'
-import { fetchAllPhotos, type Photo } from '../lib/supabase'
+import {
+  fetchPhotos,
+  getReleaseState,
+  nameToFolder,
+  GALLERY_LABEL,
+  type GalleryKey,
+  type Photo,
+} from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 
-export default function Gallery() {
+interface Props {
+  bucketKey?: GalleryKey
+}
+
+export default function Gallery({ bucketKey = 'pre' }: Props) {
   const { user, loading } = useAuth()
+  const location = useLocation()
 
   if (loading) {
     return (
@@ -17,6 +29,7 @@ export default function Gallery() {
   }
 
   if (!user) {
+    const nextParam = `?next=${encodeURIComponent(location.pathname)}`
     return (
       <div className="min-h-[75vh] flex flex-col items-center justify-center px-6 text-center">
         <div className="font-serif text-5xl text-gold/30 mb-6">♡</div>
@@ -25,7 +38,7 @@ export default function Gallery() {
           Bitte melde dich an, um die Galerie zu sehen.
         </p>
         <Link
-          to="/login"
+          to={`/login${nextParam}`}
           className="px-8 py-3 bg-charcoal text-cream text-xs tracking-widest uppercase
                      hover:bg-charcoal/80 transition-colors"
         >
@@ -35,22 +48,36 @@ export default function Gallery() {
     )
   }
 
-  return <GalleryContent />
+  return <GalleryContent bucketKey={bucketKey} />
 }
 
-function GalleryContent() {
+function GalleryContent({ bucketKey }: { bucketKey: GalleryKey }) {
+  const { displayName, isAdmin } = useAuth()
   const [photos, setPhotos] = useState<Photo[]>([])
   const [loading, setLoading] = useState(true)
+  const [released, setReleased] = useState(false)
   const [lightboxIndex, setLightboxIndex] = useState(-1)
 
   useEffect(() => {
-    fetchAllPhotos().then(data => {
+    let cancelled = false
+    ;(async () => {
+      setLoading(true)
+      const isReleased = await getReleaseState(bucketKey)
+      const canSeeAll = isReleased || isAdmin
+      const folder = canSeeAll ? undefined : nameToFolder(displayName)
+      const data = await fetchPhotos(bucketKey, folder)
+      if (cancelled) return
+      setReleased(isReleased)
       setPhotos(data)
       setLoading(false)
-    })
-  }, [])
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [bucketKey, displayName, isAdmin])
 
   const slides = photos.map(p => ({ src: p.url }))
+  const showingOwnOnly = !released && !isAdmin
 
   if (loading) {
     return (
@@ -63,17 +90,28 @@ function GalleryContent() {
   return (
     <div className="px-4 py-14">
       <p className="text-xs tracking-[0.4em] uppercase text-gold text-center mb-3 font-light">
-        Eure Momente
+        {GALLERY_LABEL[bucketKey]}
       </p>
       <h1 className="font-serif text-5xl text-center mb-2">Galerie</h1>
-      <p className="text-center text-charcoal/50 font-light text-sm mb-10">
+      <p className="text-center text-charcoal/50 font-light text-sm mb-3">
         {photos.length} {photos.length === 1 ? 'Foto' : 'Fotos'}
       </p>
 
+      {showingOwnOnly && (
+        <p className="text-center text-charcoal/50 font-light text-xs max-w-sm mx-auto mb-10 leading-relaxed">
+          Die Galerie ist noch nicht freigegeben &ndash; du siehst nur deine eigenen Fotos.
+          Sobald das Brautpaar die Galerie öffnet, erscheinen hier alle Bilder.
+        </p>
+      )}
+      {!showingOwnOnly && <div className="mb-10" />}
 
       {photos.length === 0 ? (
         <div className="text-center py-24">
-          <p className="text-charcoal/35 font-light">Noch keine Fotos hochgeladen.</p>
+          <p className="text-charcoal/35 font-light">
+            {showingOwnOnly
+              ? 'Du hast noch keine Fotos hochgeladen.'
+              : 'Noch keine Fotos hochgeladen.'}
+          </p>
         </div>
       ) : (
         <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-3 max-w-7xl mx-auto">
